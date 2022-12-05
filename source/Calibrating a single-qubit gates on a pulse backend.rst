@@ -34,7 +34,7 @@ to register as well as default parameter values.
     backend = SingleTransmonTestBackend(5.2e9,-.25e9, 1e9, 0.8e9, noise=False)
     qubit = 0 
     cals=Calibrations.from_backend(backend)
-    rint(cals.get_inst_map())
+    print(cals.get_inst_map())
 
 .. jupyter-execute::
 
@@ -209,7 +209,7 @@ negative amplitude.
 .. jupyter-execute::
 
     drag_data = cal_drag.run().block_for_results()
-    rag_data.figure(0) 
+    drag_data.figure(0) 
 
 .. jupyter-execute::
 
