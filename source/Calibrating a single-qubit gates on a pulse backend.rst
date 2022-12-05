@@ -2,17 +2,19 @@
 Calibrating a single-qubit gates on a pulse backend
 =============================================================
 In this tutorial we demonstrate how to calibrate single-qubit gates 
-on `SingleTransmonTestBackend` using the calibration framework in qiskit-experiments. 
+on ``SingleTransmonTestBackend`` using the calibration framework in qiskit-experiments. 
 We will run spectroscopy experiment to find the qubit freqeuncy, 
 calibrate the :math:`pi` pulse amplitude with Rabi experiment and 
 calibrate the DRAG parameters that minimizes lekage with DRAG experiments. 
 The calibration framework requires the user to
-- setup an instance of Calibrations,
-- run calibration experiments which can be found in `qiskit_experiments.library.calibration`.
 
-Note that the values of the parameters stored in the instance of the `Calibrations` class 
+- setup an instance of Calibrations,
+
+- run calibration experiments which can be found in ``qiskit_experiments.library.calibration``.
+
+Note that the values of the parameters stored in the instance of the ``Calibrations`` class 
 will automatically be updated by the calibration experiments. 
-This automatic updating can also be disabled using the `auto_update` flag.
+This automatic updating can also be disabled using the ``auto_update`` flag.
 
 .. jupyter-execute::
 
@@ -23,8 +25,8 @@ This automatic updating can also be disabled using the `auto_update` flag.
     from qiskit import schedule
     from qiskit_experiments.test.pulse_backend import SingleTransmonTestBackend
 
-we will use the `SingleTransmonTestBackend` from `pulse_backend` module 
-for the experiments. The `SingleTransmonTestBackend`` does not have any 
+we will use the ``SingleTransmonTestBackend`` from ``pulse_backend`` module 
+for the experiments. The ``SingleTransmonTestBackend`` does not have any 
 predefined schedules and instructions in its calibration.
 Therefore we will give a library from which we get template schedules 
 to register as well as default parameter values.
@@ -39,11 +41,12 @@ to register as well as default parameter values.
 .. jupyter-execute::
 
     from qiskit_experiments.calibration_management.basis_gate_library import FixedFrequencyTransmon
+
     library = FixedFrequencyTransmon()
     cals = Calibrations.from_backend(backend, libraries=[library])
     print(library.default_values()) # check what parameter values this library has
     print(cals.get_inst_map()) # check the new cals's InstructionScheduleMap made from the library
-    print(cals.get_schedule('x',(0,)))# check one of the schedules built from the new calibration
+    print(cals.get_schedule('x',(0,))) # check one of the schedules built from the new calibration
 
 we are going to do the Spectroscopy, Rabi and DRAG experiments in a row 
 and update the parameters after every experiments. 
@@ -88,7 +91,7 @@ The parameters are set by the default values given by the FixedFrequncyTransmon 
 
     print(spec_data.analysis_results("f01"))
 
-We now update the instance of `calibrations` 
+We now update the instance of ``calibrations`` 
 with the value of the frequency we measured.
 
 .. jupyter-execute::
@@ -100,9 +103,9 @@ with the value of the frequency we measured.
 =================================================================
 In the Rabi experiment we apply a pulse at the frequency of the qubit 
 and scan its amplitude to find the amplitude that creates a rotation 
-f a desired angle. We do this with the calibration experiment `RoughXSXAmplitudeCal`.
-This is a specialization of the `Rabi` experiment that will update the calibrations 
-for both the `X` pulse and the `SX` pulse using a single experiment.
+f a desired angle. We do this with the calibration experiment ``RoughXSXAmplitudeCal``.
+This is a specialization of the ``Rabi`` experiment that will update the calibrations 
+for both the ``X`` pulse and the ``SX`` pulse using a single experiment.
 
 .. jupyter-execute:: 
 
@@ -118,7 +121,7 @@ with different amplitudes.
     rabi.circuits()[0].draw("mpl")
 
 After the experiment completes the value of the amplitudes in the calibrations 
-will automatically be updated. This behaviour can be controlled using the `auto_update`
+will automatically be updated. This behaviour can be controlled using the ``auto_update``
 argument given to the calibration experiment at initialization.
 
 .. jupyter-execute::
@@ -136,11 +139,11 @@ argument given to the calibration experiment at initialization.
 
 The table above shows that we have now updated the amplitude of our :math:`pi` pulse 
 from 0.5 to the value obtained in the most recent Rabi experiment. 
-Importantly, since we linked the amplitudes of the `x` and `y` schedules 
-we will see that the amplitude of the `y`schedule has also been updated 
-as seen when requesting schedules form the `Calibrations` instance. 
+Importantly, since we linked the amplitudes of the ``x`` and ``y`` schedules 
+we will see that the amplitude of the ``y`` schedule has also been updated 
+as seen when requesting schedules form the ``Calibrations`` instance. 
 Furthermore, we used the result from the Rabi experiment to also update 
-the value of the `sx` pulse. 
+the value of the ``sx`` pulse. 
 
 .. jupyter-execute::
 
@@ -149,7 +152,7 @@ the value of the `sx` pulse.
 .. jupyter-execute::
 
     cals.get_schedule("x", qubit)
-
+   
 .. jupyter-execute::
 
     cals.get_schedule("y", qubit)
@@ -185,12 +188,12 @@ following cell to recover the state of your calibrations.
 A Derivative Removal by Adiabatic Gate (DRAG) pulse is designed to minimize leakage 
 to a neighbouring transition. It is a standard pulse with an additional 
 derivative component. It is designed to reduce the frequency spectrum of a 
-normal pulse near the  :math:`|1>`-:math:`|2>` transition, 
+normal pulse near the  :math:`|1> - |2>` transition, 
 reducing the chance of leakage to the :math:`|2>` state. 
 The optimal value of the DRAG parameter is chosen to minimize both 
 leakage and phase errors resulting from the AC Stark shift. 
 The pulse envelope is :math:`f(t)=\Omega_x(t)+j\beta\frac{\rm d}{{\rm d}t}\Omega_x(t)`.
-Here,:math:`\Omega_x(t)` is the envelop of the in-phase component 
+Here, :math:`\Omega_x(t)` is the envelop of the in-phase component 
 of the pulse and :math:`\beta` is the strength of the quadrature 
 which we refer to as the DRAG parameter and seek to calibrate 
 in this experiment. The DRAG calibration will run several 
@@ -222,7 +225,7 @@ negative amplitude.
 ==========================================================
 5. Fine amplitude calibration
 ==========================================================
-The `FineAmplitude` calibration experiment repeats :math:`N` times 
+The ``FineAmplitude`` calibration experiment repeats :math:`N` times 
 a gate with a pulse to amplify the under or over-rotations 
 in the gate to determine the optimal amplitude.
 
