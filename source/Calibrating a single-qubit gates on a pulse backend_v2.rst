@@ -125,7 +125,8 @@ The parameters are set by the default values given by the FixedFrequncyTransmon 
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()]))
+    columns_to_show = ["parameter","qubits","schedule","value","date_time"]    
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()]))[columns_to_show]
 
 
 .. jupyter-execute::
@@ -165,7 +166,6 @@ whether a values is valid or not and the experiment id that produce a value.
 
 .. jupyter-execute::
 
-    columns_to_show = ["parameter","qubits","schedule","value","date_time"]
     pd.DataFrame(**cals.parameters_table(qubit_list=[qubit]))[columns_to_show]
     
     
