@@ -1,5 +1,5 @@
 =============================================================
-Calibrating a single-qubit gates on a pulse backend
+Calibrating single-qubit gates on a pulse backend
 =============================================================
 In this tutorial we demonstrate how to calibrate single-qubit gates 
 on ``SingleTransmonTestBackend`` using the calibration framework in qiskit-experiments. 
@@ -25,11 +25,68 @@ This automatic updating can also be disabled using the ``auto_update`` flag.
     from qiskit import schedule
     from qiskit_experiments.test.pulse_backend import SingleTransmonTestBackend
 
-we will use the ``SingleTransmonTestBackend`` from ``pulse_backend`` module 
-for the experiments. The ``SingleTransmonTestBackend`` does not have any 
-predefined schedules and instructions in its calibration.
-Therefore we will give a library from which we get template schedules 
-to register as well as default parameter values.
+The two functions below show how to setup an instance of Calibrations. 
+To do this the user defines the template schedules to calibrate. 
+These template schedules are fully parameterized, even the channel indices 
+on which the pulses are played. Furthermore, the name of the parameter in the channel 
+index must follow the convention laid out in the documentation 
+of the calibration module. Note that the parameters in the channel indices 
+are automatically mapped to the channel index when get_schedule is called.
+
+.. jupyter-execute::
+
+    def setup_cals(backend) -> Calibrations:
+    """A function to instantiate calibrations and add a couple of template schedules."""
+    cals = Calibrations.from_backend(backend)
+
+    dur = Parameter("dur")
+    amp = Parameter("amp")
+    sigma = Parameter("σ")
+    beta = Parameter("β")
+    drive = pulse.DriveChannel(Parameter("ch0"))
+
+    # Define and add template schedules.
+    with pulse.build(name="xp") as xp:
+        pulse.play(pulse.Drag(dur, amp, sigma, beta), drive)
+
+    with pulse.build(name="xm") as xm:
+        pulse.play(pulse.Drag(dur, -amp, sigma, beta), drive)
+
+    with pulse.build(name="x90p") as x90p:
+        pulse.play(pulse.Drag(dur, Parameter("amp"), sigma, Parameter("β")), drive)
+
+    cals.add_schedule(xp, num_qubits=1)
+    cals.add_schedule(xm, num_qubits=1)
+    cals.add_schedule(x90p, num_qubits=1)
+
+    return cals
+
+    def add_parameter_guesses(cals: Calibrations):
+        """Add guesses for the parameter values to the calibrations."""
+        for sched in ["xp", "x90p"]:
+            cals.add_parameter_value(80, "σ", schedule=sched)
+            cals.add_parameter_value(0.5, "β", schedule=sched)
+            cals.add_parameter_value(320, "dur", schedule=sched)
+            cals.add_parameter_value(0.5, "amp", schedule=sched)
+
+When setting up the calibrations we add three pulses: a :math:`pi`-rotation, 
+with a schedule named ``xp``, a schedule ``xm`` identical to ``xp`` 
+but with a nagative amplitude, and a :math:`pi/2`-rotation, with a schedule 
+named ``x90p``. Here, we have linked the amplitude of the ``xp`` and ``xm`` pulses. 
+Therefore, calibrating the parameters of ``xp`` will also calibrate 
+the parameters of ``xm``.
+
+.. jupyter-execute::
+
+    cals = setup_cals(backend)
+    add_parameter_guesses(cals)
+
+A samilar setup is achieved by using a pre-built library of gates. 
+The library of gates provides a standard set of gates and some initial guesses 
+for the value of the parameters in the template schedules. 
+This is shown below using the ``FixedFrequencyTransmon`` which provides the ``x``,
+``y``, ``sx``, and ``sy`` pulses. Note that in the example below 
+we change the default value of the pulse duration to 320 samples
 
 .. jupyter-execute::
 
@@ -42,7 +99,7 @@ to register as well as default parameter values.
 
     from qiskit_experiments.calibration_management.basis_gate_library import FixedFrequencyTransmon
 
-    library = FixedFrequencyTransmon()
+    library = FixedFrequencyTransmon(default_values={"duration": 320})
     cals = Calibrations.from_backend(backend, libraries=[library])
     print(library.default_values()) # check what parameter values this library has
     print(cals.get_inst_map()) # check the new cals's InstructionScheduleMap made from the library
@@ -70,6 +127,7 @@ The parameters are set by the default values given by the FixedFrequncyTransmon 
 
     pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()]))
 
+
 .. jupyter-execute::
 
     freq01_estimate = backend.defaults().qubit_freq_est[qubit]
@@ -77,26 +135,39 @@ The parameters are set by the default values given by the FixedFrequncyTransmon 
     spec = RoughFrequencyCal(qubit, cals, frequencies, backend=backend)
     spec.set_experiment_options(amp=0.005)
 
+
+.. jupyter-execute::
+
+    next(iter(circuit.calibrations["Spec"].values())).draw() # let's check the schedule   
+
+
 .. jupyter-execute::
 
     circuit = spec.circuits()[0]
     circuit.draw(output="mpl")
+
 
 .. jupyter-execute::
 
     spec_data = spec.run().block_for_results()
     spec_data.figure(0) 
 
+
 .. jupyter-execute::
 
     print(spec_data.analysis_results("f01"))
 
+
 We now update the instance of ``calibrations`` 
 with the value of the frequency we measured.
+In addition to the columns shown below, the calibrations also store the group to which a value belongs, 
+whether a values is valid or not and the experiment id that produce a value.
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit]))
+    columns_to_show = ["parameter","qubits","schedule","value","date_time"]
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit]))[columns_to_show]
+    
     
 =================================================================
 2. Calibrating the pulse amplitudes with a Rabi experiment
@@ -135,7 +206,7 @@ argument given to the calibration experiment at initialization.
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))[columns_to_show]
 
 The table above shows that we have now updated the amplitude of our :math:`pi` pulse 
 from 0.5 to the value obtained in the most recent Rabi experiment. 
@@ -179,7 +250,7 @@ following cell to recover the state of your calibrations.
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))[columns_to_show]
 
 ===========================================================
  4. Calibrating the value of the DRAG coefficient
@@ -220,7 +291,7 @@ negative amplitude.
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="β"))
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="β"))[columns_to_show]
 
 ==========================================================
 5. Fine amplitude calibration
@@ -255,7 +326,7 @@ in the gate to determine the optimal amplitude.
 
 .. jupyter-execute::
 
-    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))[columns_to_show]
 
 .. jupyter-execute::
 
