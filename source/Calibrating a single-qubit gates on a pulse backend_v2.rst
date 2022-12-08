@@ -21,9 +21,17 @@ This automatic updating can also be disabled using the ``auto_update`` flag.
     import pandas as pd
     import numpy as np
     import qiskit.pulse as pulse
+    from qiskit.circuit import Parameter
     from qiskit_experiments.calibration_management.calibrations import Calibrations
     from qiskit import schedule
     from qiskit_experiments.test.pulse_backend import SingleTransmonTestBackend
+
+.. jupyter-execute::
+
+    backend = SingleTransmonTestBackend(5.2e9,-.25e9, 1e9, 0.8e9, noise=False)
+    qubit = 0 
+    cals=Calibrations.from_backend(backend)
+    print(cals.get_inst_map())
 
 The two functions below show how to setup an instance of Calibrations. 
 To do this the user defines the template schedules to calibrate. 
@@ -34,35 +42,37 @@ of the calibration module. Note that the parameters in the channel indices
 are automatically mapped to the channel index when get_schedule is called.
 
 .. jupyter-execute::
-
+    
+    # A function to instantiate calibrations and add a couple of template schedules.
     def setup_cals(backend) -> Calibrations:
-    """A function to instantiate calibrations and add a couple of template schedules."""
-    cals = Calibrations.from_backend(backend)
+    
+        cals = Calibrations.from_backend(backend)
+        
+        dur = Parameter("dur")
+        amp = Parameter("amp")
+        sigma = Parameter("σ")
+        beta = Parameter("β")
+        drive = pulse.DriveChannel(Parameter("ch0"))
 
-    dur = Parameter("dur")
-    amp = Parameter("amp")
-    sigma = Parameter("σ")
-    beta = Parameter("β")
-    drive = pulse.DriveChannel(Parameter("ch0"))
+        # Define and add template schedules.
+        with pulse.build(name="xp") as xp:
+            pulse.play(pulse.Drag(dur, amp, sigma, beta), drive)
 
-    # Define and add template schedules.
-    with pulse.build(name="xp") as xp:
-        pulse.play(pulse.Drag(dur, amp, sigma, beta), drive)
+        with pulse.build(name="xm") as xm:
+            pulse.play(pulse.Drag(dur, -amp, sigma, beta), drive)
 
-    with pulse.build(name="xm") as xm:
-        pulse.play(pulse.Drag(dur, -amp, sigma, beta), drive)
+        with pulse.build(name="x90p") as x90p:
+            pulse.play(pulse.Drag(dur, Parameter("amp"), sigma, Parameter("β")), drive)
 
-    with pulse.build(name="x90p") as x90p:
-        pulse.play(pulse.Drag(dur, Parameter("amp"), sigma, Parameter("β")), drive)
+        cals.add_schedule(xp, num_qubits=1)
+        cals.add_schedule(xm, num_qubits=1)
+        cals.add_schedule(x90p, num_qubits=1)
 
-    cals.add_schedule(xp, num_qubits=1)
-    cals.add_schedule(xm, num_qubits=1)
-    cals.add_schedule(x90p, num_qubits=1)
+        return cals
 
-    return cals
-
+    # Add guesses for the parameter values to the calibrations.
     def add_parameter_guesses(cals: Calibrations):
-        """Add guesses for the parameter values to the calibrations."""
+        
         for sched in ["xp", "x90p"]:
             cals.add_parameter_value(80, "σ", schedule=sched)
             cals.add_parameter_value(0.5, "β", schedule=sched)
@@ -87,13 +97,6 @@ for the value of the parameters in the template schedules.
 This is shown below using the ``FixedFrequencyTransmon`` which provides the ``x``,
 ``y``, ``sx``, and ``sy`` pulses. Note that in the example below 
 we change the default value of the pulse duration to 320 samples
-
-.. jupyter-execute::
-
-    backend = SingleTransmonTestBackend(5.2e9,-.25e9, 1e9, 0.8e9, noise=False)
-    qubit = 0 
-    cals=Calibrations.from_backend(backend)
-    print(cals.get_inst_map())
 
 .. jupyter-execute::
 
@@ -136,17 +139,15 @@ The parameters are set by the default values given by the FixedFrequncyTransmon 
     spec = RoughFrequencyCal(qubit, cals, frequencies, backend=backend)
     spec.set_experiment_options(amp=0.005)
 
-
-.. jupyter-execute::
-
-    next(iter(circuit.calibrations["Spec"].values())).draw() # let's check the schedule   
-
-
 .. jupyter-execute::
 
     circuit = spec.circuits()[0]
     circuit.draw(output="mpl")
 
+.. jupyter-execute::
+
+    next(iter(circuit.calibrations["Spec"].values())).draw() # let's check the schedule   
+    
 
 .. jupyter-execute::
 
