@@ -4,7 +4,7 @@ Calibrating single-qubit gates on a pulse backend
 In this tutorial we demonstrate how to calibrate single-qubit gates 
 on ``SingleTransmonTestBackend`` using the calibration framework in qiskit-experiments. 
 We will run spectroscopy experiment to find the qubit freqeuncy, 
-calibrate the :math:`pi` pulse amplitude with Rabi experiment and 
+calibrate the :math:`\pi` pulse amplitude with Rabi experiment and 
 calibrate the DRAG parameters that minimizes lekage with DRAG experiments. 
 The calibration framework requires the user to
 
@@ -79,9 +79,9 @@ are automatically mapped to the channel index when get_schedule is called.
             cals.add_parameter_value(320, "dur", schedule=sched)
             cals.add_parameter_value(0.5, "amp", schedule=sched)
 
-When setting up the calibrations we add three pulses: a :math:`pi`-rotation, 
+When setting up the calibrations we add three pulses: a :math:`\pi`-rotation, 
 with a schedule named ``xp``, a schedule ``xm`` identical to ``xp`` 
-but with a nagative amplitude, and a :math:`pi/2`-rotation, with a schedule 
+but with a nagative amplitude, and a :math:`\pi/2`-rotation, with a schedule 
 named ``x90p``. Here, we have linked the amplitude of the ``xp`` and ``xm`` pulses. 
 Therefore, calibrating the parameters of ``xp`` will also calibrate 
 the parameters of ``xm``.
@@ -209,7 +209,7 @@ argument given to the calibration experiment at initialization.
 
     pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))[columns_to_show]
 
-The table above shows that we have now updated the amplitude of our :math:`pi` pulse 
+The table above shows that we have now updated the amplitude of our :math:`\pi` pulse 
 from 0.5 to the value obtained in the most recent Rabi experiment. 
 Importantly, since we linked the amplitudes of the ``x`` and ``y`` schedules 
 we will see that the amplitude of the ``y`` schedule has also been updated 
@@ -341,9 +341,35 @@ in the gate to determine the optimal amplitude.
 As can be seen from the data above and the analysis result below 
 we have managed to reduce the error in the rotation angle dtheta.
 
+====================================================================
+Fine amplitude clibration of the :math:`\pi`/2 rotation
+====================================================================
 
+we now wish to calibrate the amplitude of the :math:`\pi`/2 rotation.
 
+.. jupyter-execute::
 
+    from qiskit_experiments.library.calibration.fine_amplitude import FineSXAmplitudeCal
+
+    amp_sx_cal = FineSXAmplitudeCal(qubit, cals, backend=backend, schedule_name="sx")
+    amp_sx_cal.circuits()[5].draw(output="mpl")
+
+.. jupyter-execute::
+
+    data_fine_sx = amp_sx_cal.run().block_for_results()
+    data_fine_sx.figure(0)
+
+.. jupyter-execute::
+
+    print(data_fine_sx.analysis_results(0))
+
+.. jupyter-execute::
+
+    print(data_fine_sx.analysis_results("d_theta"))
+
+.. jupyter-execute::
+
+    pd.DataFrame(**cals.parameters_table(qubit_list=[qubit, ()], parameters="amp"))[columns_to_show]
 
 
 
